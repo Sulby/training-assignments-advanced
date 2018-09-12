@@ -329,30 +329,29 @@ public final class Quaternion implements Savable, Cloneable, java.io.Serializabl
                 matrix.m11, matrix.m12, matrix.m20, matrix.m21, matrix.m22);
     }
 
-    public Quaternion fromRotationMatrix(float m00, float m01, float m02,
-            float m10, float m11, float m12, float m20, float m21, float m22) {
+    public Quaternion fromRotationMatrix(QuaternionVector forwardVector, QuaternionVector upVector, QuaternionVector sidewayVector) {
         // first normalize the forward (F), up (U) and side (S) vectors of the rotation matrix
         // so that the scale does not affect the rotation
-        float lengthSquared = m00 * m00 + m10 * m10 + m20 * m20;
+        float lengthSquared = forwardVector.a * forwardVector.a + upVector.a * upVector.a + sidewayVector.a * sidewayVector.a;
         if (lengthSquared != 1f && lengthSquared != 0f) {
             lengthSquared = 1.0f / FastMath.sqrt(lengthSquared);
-            m00 *= lengthSquared;
-            m10 *= lengthSquared;
-            m20 *= lengthSquared;
+            forwardVector.a *= lengthSquared;
+            upVector.a *= lengthSquared;
+            sidewayVector.a *= lengthSquared;
         }
-        lengthSquared = m01 * m01 + m11 * m11 + m21 * m21;
+        lengthSquared = forwardVector.b * forwardVector.b + upVector.b * upVector.b + sidewayVector.b * sidewayVector.b;
         if (lengthSquared != 1f && lengthSquared != 0f) {
             lengthSquared = 1.0f / FastMath.sqrt(lengthSquared);
-            m01 *= lengthSquared;
-            m11 *= lengthSquared;
-            m21 *= lengthSquared;
+            forwardVector.b *= lengthSquared;
+            upVector.b *= lengthSquared;
+            sidewayVector.b *= lengthSquared;
         }
-        lengthSquared = m02 * m02 + m12 * m12 + m22 * m22;
+        lengthSquared = forwardVector.c * forwardVector.c + upVector.c * upVector.c + sidewayVector.c * sidewayVector.c;
         if (lengthSquared != 1f && lengthSquared != 0f) {
             lengthSquared = 1.0f / FastMath.sqrt(lengthSquared);
-            m02 *= lengthSquared;
-            m12 *= lengthSquared;
-            m22 *= lengthSquared;
+            forwardVector.c *= lengthSquared;
+            upVector.c *= lengthSquared;
+            sidewayVector.c *= lengthSquared;
         }
 
         // Use the Graphics Gems code, from 
@@ -361,37 +360,37 @@ public final class Quaternion implements Savable, Cloneable, java.io.Serializabl
 
         // the trace is the sum of the diagonal elements; see
         // http://mathworld.wolfram.com/MatrixTrace.html
-        float t = m00 + m11 + m22;
+        float t = forwardVector.a + upVector.b + sidewayVector.c;
 
         // we protect the division by s by ensuring that s>=1
         if (t >= 0) { // |w| >= .5
             float s = FastMath.sqrt(t + 1); // |s|>=1 ...
             w = 0.5f * s;
             s = 0.5f / s;                 // so this division isn't bad
-            x = (m21 - m12) * s;
-            y = (m02 - m20) * s;
-            z = (m10 - m01) * s;
-        } else if ((m00 > m11) && (m00 > m22)) {
-            float s = FastMath.sqrt(1.0f + m00 - m11 - m22); // |s|>=1
+            x = (sidewayVector.b - upVector.c) * s;
+            y = (forwardVector.c - sidewayVector.a) * s;
+            z = (upVector.a - forwardVector.b) * s;
+        } else if ((forwardVector.a > upVector.b) && (forwardVector.a > sidewayVector.c)) {
+            float s = FastMath.sqrt(1.0f + forwardVector.a - upVector.b - sidewayVector.c); // |s|>=1
             x = s * 0.5f; // |x| >= .5
             s = 0.5f / s;
-            y = (m10 + m01) * s;
-            z = (m02 + m20) * s;
-            w = (m21 - m12) * s;
-        } else if (m11 > m22) {
-            float s = FastMath.sqrt(1.0f + m11 - m00 - m22); // |s|>=1
+            y = (upVector.a + forwardVector.b) * s;
+            z = (forwardVector.c + sidewayVector.a) * s;
+            w = (sidewayVector.b - upVector.c) * s;
+        } else if (upVector.b > sidewayVector.c) {
+            float s = FastMath.sqrt(1.0f + upVector.b - forwardVector.a - sidewayVector.c); // |s|>=1
             y = s * 0.5f; // |y| >= .5
             s = 0.5f / s;
-            x = (m10 + m01) * s;
-            z = (m21 + m12) * s;
-            w = (m02 - m20) * s;
+            x = (upVector.a + forwardVector.b) * s;
+            z = (sidewayVector.b + upVector.c) * s;
+            w = (forwardVector.c - sidewayVector.a) * s;
         } else {
-            float s = FastMath.sqrt(1.0f + m22 - m00 - m11); // |s|>=1
+            float s = FastMath.sqrt(1.0f + sidewayVector.c - forwardVector.a - upVector.b); // |s|>=1
             z = s * 0.5f; // |z| >= .5
             s = 0.5f / s;
-            x = (m02 + m20) * s;
-            y = (m21 + m12) * s;
-            w = (m10 - m01) * s;
+            x = (forwardVector.c + sidewayVector.a) * s;
+            y = (sidewayVector.b + upVector.c) * s;
+            w = (upVector.a - forwardVector.b) * s;
         }
 
         return this;
